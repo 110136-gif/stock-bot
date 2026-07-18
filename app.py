@@ -1,1 +1,33 @@
+Python
+from flask import Flask, request, abort
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
+import os
 
+app = Flask(__name__)
+
+# 請務必填入你的真實 Token (這兩行不要刪掉，只改引號內的文字)
+line_bot_api = LineBotApi('填入你的_Channel_Access_Token')
+handler = WebhookHandler('填入你的_Channel_Secret')
+
+@app.route("/callback", methods=['POST'])
+def callback():
+    signature = request.headers['X-Line-Signature']
+    body = request.get_data(as_text=True)
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        abort(400)
+    return 'OK'
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="系統已連線！輸入「市場」即可查看股價。")
+    )
+
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
